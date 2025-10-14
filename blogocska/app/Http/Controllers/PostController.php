@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Category;
+use Illuminate\Support\Facades\Session;
+use App\Http\Requests\PostStoreOrUpdateRequest;
 
 class PostController extends Controller
 {
@@ -26,19 +28,29 @@ class PostController extends Controller
         ]);
     }
 
-    public function store(Request $request){
-        $validated = $request -> validate([
-            'title' => 'required|string',
-            'content' => 'required|string|min:10',
-            'author_id' => 'required|integer|exists:users,id',
-            'categories' => 'nullable|array',
-            'categories.*' => 'distinct|integer|exists:categories,id'
-        ], [
-            'content.min' => 'Legalább 10 karakter kellene'
-        ]);
+    public function store(PostStoreOrUpdateRequest $request){
+        $validated = $request -> validated();
         $validated['is_public'] = $request -> has('is_public');
         $post = Post::create($validated);
         $post -> categories() -> sync($validated['categories'] ?? []);
+        Session::flash('create-success', $post -> title);
+        return redirect() -> route('posts.index');
+    }
+
+    public function edit(Post $post){
+        return view('posts.edit', [
+            'users' => User::all(),
+            'categories' => Category::all(),
+            'post' => $post
+        ]);
+    }
+
+    public function update(PostStoreOrUpdateRequest $request, Post $post){
+        $validated = $request -> validated();
+        $validated['is_public'] = $request -> has('is_public');
+        $post -> update($validated);
+        $post -> categories() -> sync($validated['categories'] ?? []);
+        Session::flash('update-success', $post -> title);
         return redirect() -> route('posts.index');
     }
 }
