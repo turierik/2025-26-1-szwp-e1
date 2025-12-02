@@ -72,3 +72,15 @@ type Category {
     created_at: DateTime!
     updated_at: DateTime!
 }
+
+input CreatePostInput{
+    title: String!
+    content: String!
+    author_id: ID! @rules(apply: ['exists:users, id'])
+    is_public: Boolean!
+}
+
+type Mutation {
+    createPost1(title: String!, content: String!, author_id: ID!, is_public: Boolean!): Post!
+    createPost2(input: CreatePostInput! @spread): Post! @create
+}
